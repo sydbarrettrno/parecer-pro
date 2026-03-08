@@ -59,18 +59,20 @@ export async function executePipelineUpload(
   const zipPath = `${processo.id}/processo.zip`;
   await uploadToStorage("processos", zipPath, zipFile);
 
-  // 3. Extrair arquivos do ZIP
+  // 3. Extrair arquivos do ZIP (incluindo subpastas)
   const extractedFiles = await extractFilesFromZip(zipFile);
+
+  console.log(`[Pipeline] ${extractedFiles.length} arquivo(s) encontrados no ZIP`);
 
   // 4. Upload individual + classificação + registro
   for (const ef of extractedFiles) {
     const storagePath = `${processo.id}/${ef.safeName}`;
     await uploadToStorage("processos", storagePath, ef.data);
 
-    const categoria = classifyDocument(ef.name);
+    const categoria = classifyDocument(ef.fullPath);
     await insertArquivo({
       processo_id: processo.id,
-      nome_original: ef.name,
+      nome_original: ef.fullPath,
       extensao: ef.extension,
       storage_path: storagePath,
       categoria,
