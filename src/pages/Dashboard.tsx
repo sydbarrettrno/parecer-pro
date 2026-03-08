@@ -105,11 +105,32 @@ const Dashboard = () => {
               <Card key={processo.id} className="transition-all hover:shadow-md hover:border-primary/30">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <Link to={linkPath} className="flex-1">
-                      <CardTitle className="text-base leading-tight cursor-pointer hover:text-primary">
-                        {processo.nome_processo}
-                      </CardTitle>
-                    </Link>
+                    {editingId === processo.id ? (
+                      <div className="flex flex-1 items-center gap-1">
+                        <Input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="h-7 text-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") updateTitle.mutate({ id: processo.id, nome: editTitle });
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateTitle.mutate({ id: processo.id, nome: editTitle })}>
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Link to={linkPath} className="flex-1">
+                        <CardTitle className="text-base leading-tight cursor-pointer hover:text-primary">
+                          {processo.nome_processo}
+                        </CardTitle>
+                      </Link>
+                    )}
                     <div className="flex items-center gap-2">
                       <span className={`status-badge ${status.class}`}>
                         <StatusIcon className="mr-1 h-3 w-3" />
