@@ -73,6 +73,7 @@ export async function executePipelineUpload(
       nome_original: ef.name,
       extensao: ef.extension,
       storage_path: storagePath,
+      categoria,
     });
   }
 

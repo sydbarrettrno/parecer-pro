@@ -14,6 +14,7 @@ export async function insertArquivo(data: {
   nome_original: string;
   extensao: string;
   storage_path: string;
+  categoria?: string;
 }) {
   const { error } = await supabase.from("arquivos").insert(data);
   if (error) throw error;
