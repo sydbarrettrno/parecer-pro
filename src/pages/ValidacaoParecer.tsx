@@ -322,7 +322,45 @@ const ValidacaoParecer = () => {
       {processo && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Processo: {processo.nome_processo}</CardTitle>
+            <div className="flex items-center gap-2">
+              {editingTitle ? (
+                <>
+                  <Input
+                    value={titleValue}
+                    onChange={(e) => setTitleValue(e.target.value)}
+                    className="h-8 text-lg font-semibold"
+                    autoFocus
+                    onKeyDown={async (e) => {
+                      if (e.key === "Enter") {
+                        await supabase.from("processos").update({ nome_processo: titleValue }).eq("id", id!);
+                        queryClient.invalidateQueries({ queryKey: ["processo", id] });
+                        setEditingTitle(false);
+                        toast.success("Título atualizado!");
+                      }
+                      if (e.key === "Escape") setEditingTitle(false);
+                    }}
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={async () => {
+                    await supabase.from("processos").update({ nome_processo: titleValue }).eq("id", id!);
+                    queryClient.invalidateQueries({ queryKey: ["processo", id] });
+                    setEditingTitle(false);
+                    toast.success("Título atualizado!");
+                  }}>
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTitle(false)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <CardTitle className="text-lg">Processo: {processo.nome_processo}</CardTitle>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setTitleValue(processo.nome_processo); setEditingTitle(true); }}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
