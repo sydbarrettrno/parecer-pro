@@ -96,3 +96,20 @@ export function classifyDocument(fullPath: string): CategoriaDocumento {
 
   return "OUTROS";
 }
+
+const CATEGORY_LABELS: Record<CategoriaDocumento, string> = {
+  ADMINISTRATIVO: "Administrativo",
+  MEMORIAL_OU_TR: "Memorial / TR",
+  ORCAMENTO: "Orçamento",
+  CRONOGRAMA: "Cronograma",
+  RESPONSABILIDADE_TECNICA: "Resp. Técnica",
+  DRENAGEM: "Proj. Drenagem",
+  CADASTRO_TOPOGRAFIA: "Cadastro / Topografia",
+  URBANIZACAO_SINALIZACAO: "Urbanização / Sinalização",
+  OUTROS: "Outros",
+};
+
+export function categoriaLabel(cat: string | null | undefined): string {
+  if (!cat) return "Outros";
+  return CATEGORY_LABELS[cat as CategoriaDocumento] ?? cat;
+}

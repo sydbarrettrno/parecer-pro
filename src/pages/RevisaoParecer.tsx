@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { categoriaLabel } from "@/services/documentClassifier";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
