@@ -23,7 +23,7 @@ import { buildParecerFromRawData } from "@/services/parecerBuilder";
 import { fetchProcesso, updateProcessoStatus } from "@/database/processos";
 import { fetchArquivos } from "@/database/arquivos";
 import { fetchDadosExtraidos } from "@/database/dados-extraidos";
-import { fetchPareceres, insertParecer } from "@/database/pareceres";
+import { fetchPareceres, insertParecer, deleteParecer } from "@/database/pareceres";
 
 const ResultadoFinal = () => {
   const { id } = useParams<{ id: string }>();
