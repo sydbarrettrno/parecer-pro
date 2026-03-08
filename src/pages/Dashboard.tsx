@@ -1,18 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, Search, MoreVertical, Pencil, Eye, RotateCcw } from "lucide-react";
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, Search, MoreVertical, Pencil, Eye, RotateCcw, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; class: string; icon: typeof Clock }> = {
   cadastrado: { label: "Cadastrado", class: "status-cadastrado", icon: Clock },
@@ -23,6 +26,10 @@ const statusConfig: Record<string, { label: string; class: string; icon: typeof 
 };
 
 const Dashboard = () => {
+  const queryClient = useQueryClient();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+
   const { data: processos, isLoading } = useQuery({
     queryKey: ["processos"],
     queryFn: async () => {
@@ -34,6 +41,24 @@ const Dashboard = () => {
       return data;
     },
   });
+
+  const updateTitle = useMutation({
+    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
+      const { error } = await supabase.from("processos").update({ nome_processo: nome }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Título atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["processos"] });
+      setEditingId(null);
+    },
+    onError: () => toast.error("Erro ao atualizar título"),
+  });
+
+  const startEditTitle = (id: string, currentTitle: string) => {
+    setEditingId(id);
+    setEditTitle(currentTitle);
+  };
 
   return (
     <AppLayout title="Painel de Processos">
@@ -80,11 +105,32 @@ const Dashboard = () => {
               <Card key={processo.id} className="transition-all hover:shadow-md hover:border-primary/30">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <Link to={linkPath} className="flex-1">
-                      <CardTitle className="text-base leading-tight cursor-pointer hover:text-primary">
-                        {processo.nome_processo}
-                      </CardTitle>
-                    </Link>
+                    {editingId === processo.id ? (
+                      <div className="flex flex-1 items-center gap-1">
+                        <Input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="h-7 text-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") updateTitle.mutate({ id: processo.id, nome: editTitle });
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                        />
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => updateTitle.mutate({ id: processo.id, nome: editTitle })}>
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Link to={linkPath} className="flex-1">
+                        <CardTitle className="text-base leading-tight cursor-pointer hover:text-primary">
+                          {processo.nome_processo}
+                        </CardTitle>
+                      </Link>
+                    )}
                     <div className="flex items-center gap-2">
                       <span className={`status-badge ${status.class}`}>
                         <StatusIcon className="mr-1 h-3 w-3" />
@@ -97,6 +143,10 @@ const Dashboard = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => startEditTitle(processo.id, processo.nome_processo)}>
+                            <Pencil className="mr-2 h-3.5 w-3.5" />
+                            Editar Título
+                          </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link to={`/revisao/${processo.id}`} className="flex items-center gap-2">
                               <Pencil className="h-3.5 w-3.5" />

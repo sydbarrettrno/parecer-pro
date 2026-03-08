@@ -33,6 +33,8 @@ const ValidacaoParecer = () => {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [initialized, setInitialized] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
 
   const { data: processo } = useQuery({
     queryKey: ["processo", id],
@@ -113,14 +115,8 @@ const ValidacaoParecer = () => {
 
     const built: SecaoParecer[] = [
       {
-        key: "identificacao_processo",
-        titulo: "2. IDENTIFICAÇÃO DO PROCESSO",
-        texto: `Nome: ${processo.nome_processo}\nNúmero do Processo: ${processo.numero_processo}\nÓrgão: ${processo.orgao}\nSecretaria: ${processo.secretaria}`,
-        oculto: false,
-      },
-      {
         key: "objeto",
-        titulo: "3. OBJETO",
+        titulo: "1. IDENTIFICAÇÃO E OBJETO",
         texto: dadosMap["objeto_contratacao"]?.valor || "Não foi identificada informação correspondente nos documentos analisados.",
         origem: dadosMap["objeto_contratacao"]?.origem,
         confianca: dadosMap["objeto_contratacao"]?.confianca,
@@ -128,58 +124,92 @@ const ValidacaoParecer = () => {
       },
       {
         key: "documentos_analisados",
-        titulo: "4. DOCUMENTOS ANALISADOS",
+        titulo: "2. DOCUMENTOS ANALISADOS",
         texto: docsList || "Nenhum documento analisado.",
         oculto: false,
       },
       {
+        key: "assunto",
+        titulo: "3. ASSUNTO",
+        texto: `Elaboração de Parecer Técnico para o material apresentado, visando instruir procedimento licitatório para execução de obra pública, conforme especificações constantes nas peças técnicas que integram o processo nº ${processo.numero_processo}.`,
+        oculto: false,
+      },
+      {
+        key: "consideracoes_iniciais",
+        titulo: "4. CONSIDERAÇÕES INICIAIS",
+        texto: "Este parecer tem por objetivo verificar se o conjunto documental apresentado possui completude, clareza e consistência documental para subsidiar a instrução do procedimento licitatório, à luz da Lei nº 14.133/2021.",
+        oculto: false,
+      },
+      {
+        key: "projetos_documentos",
+        titulo: "5.1 PROJETOS E DEMAIS DOCUMENTOS TÉCNICOS",
+        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        oculto: false,
+      },
+      {
         key: "valor_estimado",
-        titulo: "5.1 VALOR ESTIMADO",
+        titulo: "5.2 VALOR GLOBAL ORÇADO",
         texto: dadosMap["valor_estimado"]?.valor || "Não foi identificada informação correspondente nos documentos analisados.",
         origem: dadosMap["valor_estimado"]?.origem,
         confianca: dadosMap["valor_estimado"]?.confianca,
         oculto: false,
       },
       {
-        key: "responsavel_tecnico_dado",
-        titulo: "5.2 RESPONSÁVEL TÉCNICO",
-        texto: dadosMap["responsavel_tecnico"]?.valor || "Não foi identificada informação correspondente nos documentos analisados.",
-        origem: dadosMap["responsavel_tecnico"]?.origem,
-        confianca: dadosMap["responsavel_tecnico"]?.confianca,
+        key: "determinacao_custos",
+        titulo: "5.3 DETERMINAÇÃO DOS CUSTOS",
+        texto: "Não foi identificada informação correspondente nos documentos analisados.",
         oculto: false,
       },
-      // Other extracted fields
+      {
+        key: "oneracao_desoneracao",
+        titulo: "5.4 ONERAÇÃO / DESONERAÇÃO",
+        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        oculto: false,
+      },
+      {
+        key: "bdi",
+        titulo: "5.5 BDI",
+        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        oculto: false,
+      },
+      {
+        key: "cronograma",
+        titulo: "5.6 CRONOGRAMA FÍSICO-FINANCEIRO E MEMORIAIS",
+        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        oculto: false,
+      },
+      // Other extracted fields as additional analysis sections
       ...dadosExtraidos
         .filter((d) => !["objeto_contratacao", "valor_estimado", "responsavel_tecnico", "numero_processo", "orgao_responsavel", "secretaria_responsavel"].includes(d.campo))
-        .map((d) => ({
+        .map((d, i) => ({
           key: `extra_${d.id}`,
-          titulo: `5.X ${campoLabels[d.campo] || d.campo}`,
+          titulo: `5.${7 + i} ${campoLabels[d.campo] || d.campo.toUpperCase()}`,
           texto: d.valor,
           origem: d.origem_documento ?? undefined,
           confianca: d.confianca ?? undefined,
           oculto: false,
         })),
       {
+        key: "conclusao",
+        titulo: "6. CONCLUSÃO – PARECER TÉCNICO",
+        texto: `Parecer técnico elaborado com base na análise de ${arquivos.length} documento(s) integrante(s) do processo administrativo nº ${processo.numero_processo}.`,
+        oculto: false,
+      },
+      {
         key: "inconsistencias",
-        titulo: "6. REGISTRO DE INCONSISTÊNCIAS GRAVES",
+        titulo: "REGISTRO DE INCONSISTÊNCIAS GRAVES",
         texto: "Não foram identificadas inconsistências graves nos documentos analisados.",
         oculto: false,
       },
       {
         key: "complementacao",
-        titulo: "7. SOLICITAÇÃO DE COMPLEMENTAÇÃO DOCUMENTAL",
+        titulo: "SOLICITAÇÃO DE COMPLEMENTAÇÃO DOCUMENTAL",
         texto: "Não há solicitação de complementação documental.",
         oculto: false,
       },
       {
-        key: "sintese",
-        titulo: "8. SÍNTESE DA ANÁLISE",
-        texto: `Parecer técnico elaborado com base na análise de ${arquivos.length} documento(s) integrante(s) do processo administrativo nº ${processo.numero_processo}.`,
-        oculto: false,
-      },
-      {
         key: "responsavel_tecnico_final",
-        titulo: "9. IDENTIFICAÇÃO DO RESPONSÁVEL TÉCNICO",
+        titulo: "RESPONSÁVEL TÉCNICO",
         texto: dadosMap["responsavel_tecnico"]?.valor || "Não foi identificada informação correspondente nos documentos analisados.",
         oculto: false,
       },
@@ -225,7 +255,7 @@ const ValidacaoParecer = () => {
 
       const conteudo = {
         identificacao_parecer: {
-          numero: `PT-${processo.numero_processo}-V${String(nextVersion).padStart(2, "0")}`,
+          numero: `Nº ${String(nextVersion).padStart(3, "0")}/${new Date().getFullYear()} – ${processo.secretaria}`,
           data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }),
         },
         identificacao_processo: {
@@ -233,24 +263,26 @@ const ValidacaoParecer = () => {
           numero: processo.numero_processo,
           orgao: processo.orgao,
           secretaria: processo.secretaria,
-          texto_validado: getSecao("identificacao_processo"),
         },
         objeto: getSecao("objeto") || "Não foi identificada informação correspondente nos documentos analisados.",
         documentos_analisados: arquivos.map((a) => ({
           nome: a.nome_original,
           categoria: a.categoria || "OUTROS",
         })),
+        assunto: getSecao("assunto") || null,
+        consideracoes_iniciais: getSecao("consideracoes_iniciais") || null,
         analise_tecnica: visibleSections
-          .filter((s) => s.key.startsWith("valor_estimado") || s.key.startsWith("responsavel_tecnico_dado") || s.key.startsWith("extra_"))
+          .filter((s) => s.key.startsWith("valor_estimado") || s.key.startsWith("extra_") || s.key === "projetos_documentos" || s.key === "determinacao_custos" || s.key === "oneracao_desoneracao" || s.key === "bdi" || s.key === "cronograma")
           .map((s) => ({
-            campo: s.titulo.replace(/^5\.\d?\s*/, "").replace(/^5\.X\s*/, ""),
+            campo: s.key,
             valor: s.texto,
             origem: s.origem,
             confianca: s.confianca,
           })),
         inconsistencias: getSecao("inconsistencias") || "Não foram identificadas inconsistências graves nos documentos analisados.",
         complementacao: getSecao("complementacao") || null,
-        sintese: getSecao("sintese") || "—",
+        sintese: getSecao("conclusao") || "—",
+        conclusao: getSecao("conclusao") || "—",
         responsavel_tecnico: getSecao("responsavel_tecnico_final") || "Não foi identificada informação correspondente nos documentos analisados.",
       };
 
@@ -290,7 +322,45 @@ const ValidacaoParecer = () => {
       {processo && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Processo: {processo.nome_processo}</CardTitle>
+            <div className="flex items-center gap-2">
+              {editingTitle ? (
+                <>
+                  <Input
+                    value={titleValue}
+                    onChange={(e) => setTitleValue(e.target.value)}
+                    className="h-8 text-lg font-semibold"
+                    autoFocus
+                    onKeyDown={async (e) => {
+                      if (e.key === "Enter") {
+                        await supabase.from("processos").update({ nome_processo: titleValue }).eq("id", id!);
+                        queryClient.invalidateQueries({ queryKey: ["processo", id] });
+                        setEditingTitle(false);
+                        toast.success("Título atualizado!");
+                      }
+                      if (e.key === "Escape") setEditingTitle(false);
+                    }}
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={async () => {
+                    await supabase.from("processos").update({ nome_processo: titleValue }).eq("id", id!);
+                    queryClient.invalidateQueries({ queryKey: ["processo", id] });
+                    setEditingTitle(false);
+                    toast.success("Título atualizado!");
+                  }}>
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingTitle(false)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <CardTitle className="text-lg">Processo: {processo.nome_processo}</CardTitle>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setTitleValue(processo.nome_processo); setEditingTitle(true); }}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
