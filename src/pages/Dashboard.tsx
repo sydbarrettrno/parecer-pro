@@ -1,18 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, Search, MoreVertical, Pencil, Eye, RotateCcw } from "lucide-react";
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, Search, MoreVertical, Pencil, Eye, RotateCcw, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; class: string; icon: typeof Clock }> = {
   cadastrado: { label: "Cadastrado", class: "status-cadastrado", icon: Clock },
