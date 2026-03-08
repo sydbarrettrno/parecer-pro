@@ -67,6 +67,37 @@ const Dashboard = () => {
     onError: () => toast.error("Erro ao atualizar título"),
   });
 
+  const deleteProcesso = useMutation({
+    mutationFn: async (processoId: string) => {
+      // Check if there are pareceres
+      const { data: pareceres, error: pErr } = await supabase
+        .from("pareceres")
+        .select("id")
+        .eq("processo_id", processoId)
+        .limit(1);
+      if (pErr) throw pErr;
+      if (pareceres && pareceres.length > 0) {
+        throw new Error("Exclua todas as versões do parecer antes de excluir o processo.");
+      }
+      // Delete related data
+      const { error: dErr } = await supabase.from("dados_extraidos").delete().eq("processo_id", processoId);
+      if (dErr) throw dErr;
+      const { error: aErr } = await supabase.from("arquivos").delete().eq("processo_id", processoId);
+      if (aErr) throw aErr;
+      const { error: err } = await supabase.from("processos").delete().eq("id", processoId);
+      if (err) throw err;
+    },
+    onSuccess: () => {
+      toast.success("Processo excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["processos"] });
+      setDeleteTarget(null);
+    },
+    onError: (err) => {
+      toast.error(err.message);
+      setDeleteTarget(null);
+    },
+  });
+
   const startEditTitle = (id: string, currentTitle: string) => {
     setEditingId(id);
     setEditTitle(currentTitle);
