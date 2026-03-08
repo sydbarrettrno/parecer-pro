@@ -194,6 +194,9 @@ export type Database = {
         | "CRONOGRAMA"
         | "RESPONSABILIDADE_TECNICA"
         | "OUTROS"
+        | "DRENAGEM"
+        | "CADASTRO_TOPOGRAFIA"
+        | "URBANIZACAO_SINALIZACAO"
       status_processo:
         | "cadastrado"
         | "analisando"
@@ -334,6 +337,9 @@ export const Constants = {
         "CRONOGRAMA",
         "RESPONSABILIDADE_TECNICA",
         "OUTROS",
+        "DRENAGEM",
+        "CADASTRO_TOPOGRAFIA",
+        "URBANIZACAO_SINALIZACAO",
       ],
       status_processo: [
         "cadastrado",

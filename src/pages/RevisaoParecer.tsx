@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { categoriaLabel } from "@/services/documentClassifier";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,7 +127,7 @@ const RevisaoParecer = () => {
                   <span className="truncate">{arq.nome_original}</span>
                   {arq.categoria && (
                     <Badge variant="outline" className="ml-auto shrink-0 text-xs">
-                      {arq.categoria}
+                      {categoriaLabel(arq.categoria)}
                     </Badge>
                   )}
                 </div>
