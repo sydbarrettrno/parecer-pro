@@ -10,9 +10,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, FileText, Clock, CheckCircle, AlertCircle, Search, MoreVertical, Pencil, Eye, RotateCcw, Check, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, FileText, Clock, CheckCircle, AlertCircle, Search, MoreVertical, Pencil, Eye, RotateCcw, Check, X, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -29,6 +40,7 @@ const Dashboard = () => {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; nome: string } | null>(null);
 
   const { data: processos, isLoading } = useQuery({
     queryKey: ["processos"],
@@ -53,6 +65,37 @@ const Dashboard = () => {
       setEditingId(null);
     },
     onError: () => toast.error("Erro ao atualizar título"),
+  });
+
+  const deleteProcesso = useMutation({
+    mutationFn: async (processoId: string) => {
+      // Check if there are pareceres
+      const { data: pareceres, error: pErr } = await supabase
+        .from("pareceres")
+        .select("id")
+        .eq("processo_id", processoId)
+        .limit(1);
+      if (pErr) throw pErr;
+      if (pareceres && pareceres.length > 0) {
+        throw new Error("Exclua todas as versões do parecer antes de excluir o processo.");
+      }
+      // Delete related data
+      const { error: dErr } = await supabase.from("dados_extraidos").delete().eq("processo_id", processoId);
+      if (dErr) throw dErr;
+      const { error: aErr } = await supabase.from("arquivos").delete().eq("processo_id", processoId);
+      if (aErr) throw aErr;
+      const { error: err } = await supabase.from("processos").delete().eq("id", processoId);
+      if (err) throw err;
+    },
+    onSuccess: () => {
+      toast.success("Processo excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["processos"] });
+      setDeleteTarget(null);
+    },
+    onError: (err) => {
+      toast.error(err.message);
+      setDeleteTarget(null);
+    },
   });
 
   const startEditTitle = (id: string, currentTitle: string) => {
@@ -173,6 +216,14 @@ const Dashboard = () => {
                               </Link>
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setDeleteTarget({ id: processo.id, nome: processo.nome_processo })}
+                          >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            Excluir Processo
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -215,6 +266,26 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir processo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O processo "{deleteTarget?.nome}" será excluído permanentemente junto com seus arquivos e dados extraídos. Se houver pareceres gerados, exclua-os primeiro na tela de Resultado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && deleteProcesso.mutate(deleteTarget.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
