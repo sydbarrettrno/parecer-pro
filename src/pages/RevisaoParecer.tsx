@@ -221,6 +221,12 @@ const RevisaoParecer = () => {
                           Origem: {dado.origem_documento}
                         </p>
                       )}
+                      {dado.trecho && (
+                        <div className="mt-2 rounded border border-border/50 bg-muted/30 px-3 py-2">
+                          <p className="text-[11px] font-medium text-muted-foreground mb-0.5">Trecho identificado:</p>
+                          <p className="text-xs italic text-foreground/80">"{dado.trecho}"</p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-1">
                       <Button
