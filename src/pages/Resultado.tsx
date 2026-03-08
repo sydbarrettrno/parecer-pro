@@ -169,10 +169,36 @@ const ResultadoFinal = () => {
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => handleDownload(parecer)}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar DOCX
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={() => handleDownload(parecer)}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar DOCX
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="icon" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir parecer V{String(parecer.versao).padStart(2, "0")}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. O parecer será removido permanentemente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => excluirParecer.mutate(parecer.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardContent>
             </Card>
           ))}
