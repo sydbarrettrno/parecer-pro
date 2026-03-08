@@ -143,12 +143,19 @@ const NovoParecer = () => {
               <div className="rounded-lg border bg-muted/30 p-4">
                 <h4 className="mb-2 text-sm font-medium">Documentos no ZIP:</h4>
                 <ul className="space-y-1">
-                  {fileList.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileArchive className="h-3.5 w-3.5" />
-                      {f}
-                    </li>
-                  ))}
+                  {fileList.map((f) => {
+                    const fileName = f.split("/").pop() || f;
+                    const folder = f.includes("/") ? f.substring(0, f.lastIndexOf("/")) : "";
+                    return (
+                      <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <FileArchive className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">
+                          {folder && <span className="text-muted-foreground/60">{folder}/</span>}
+                          {fileName}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
