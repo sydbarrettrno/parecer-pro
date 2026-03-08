@@ -82,6 +82,19 @@ const ResultadoFinal = () => {
     },
   });
 
+  const excluirParecer = useMutation({
+    mutationFn: async (parecerId: string) => {
+      await deleteParecer(parecerId);
+    },
+    onSuccess: () => {
+      toast.success("Parecer excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["pareceres", id] });
+    },
+    onError: (err) => {
+      toast.error(`Erro ao excluir parecer: ${err.message}`);
+    },
+  });
+
   const handleDownload = async (parecer: any) => {
     try {
       const version = String(parecer.versao).padStart(2, "0");
