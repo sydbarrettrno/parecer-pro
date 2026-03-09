@@ -113,6 +113,100 @@ const ValidacaoParecer = () => {
       .map((a, i) => `${i + 1}. ${a.nome_original} [${a.categoria || "OUTROS"}]`)
       .join("\n");
 
+    // ── Helper: group files by category ──
+    const byCategory = (cat: string) => arquivos.filter((a) => a.categoria === cat);
+
+    const listFileNames = (cat: string) =>
+      byCategory(cat).map((a) => a.nome_original);
+
+    // ── 5.1 PROJETOS E DEMAIS DOCUMENTOS TÉCNICOS ──
+    const memoriais = listFileNames("MEMORIAL_OU_TR");
+    const drenagem = listFileNames("DRENAGEM");
+    const cadastro = listFileNames("CADASTRO_TOPOGRAFIA");
+    const urbSin = listFileNames("URBANIZACAO_SINALIZACAO");
+    const artRrt = listFileNames("RESPONSABILIDADE_TECNICA");
+
+    const projetosLines: string[] = [];
+    if (memoriais.length > 0) projetosLines.push(`Memorial descritivo / Termo de referência: ${memoriais.join(", ")}.`);
+    if (drenagem.length > 0) projetosLines.push(`Projeto de drenagem: ${drenagem.join(", ")}.`);
+    if (cadastro.length > 0) projetosLines.push(`Cadastro / Topografia: ${cadastro.join(", ")}.`);
+    if (urbSin.length > 0) projetosLines.push(`Urbanização / Sinalização: ${urbSin.join(", ")}.`);
+    if (artRrt.length > 0) projetosLines.push(`ART/RRT: ${artRrt.join(", ")}.`);
+
+    const projetosTexto = projetosLines.length > 0
+      ? `Foram identificados os seguintes documentos técnicos:\n${projetosLines.join("\n")}`
+      : "Não foram identificados projetos ou documentos técnicos no conjunto documental apresentado.";
+
+    // ── 5.3 DETERMINAÇÃO DOS CUSTOS ──
+    const orcFiles = listFileNames("ORCAMENTO");
+    const orcSintetico = orcFiles.filter((n) => {
+      const nl = n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return nl.includes("orcamento sintetico") || nl.includes("sintetico");
+    });
+    const composicoes = orcFiles.filter((n) => n.toLowerCase().includes("composi"));
+    const memoriaCalc = orcFiles.filter((n) => n.toLowerCase().includes("memoria"));
+    const cotacoes = orcFiles.filter((n) => {
+      const nl = n.toLowerCase();
+      return nl.includes("cotac") || nl.includes("cotaç");
+    });
+    const curvaAbc = orcFiles.filter((n) => n.toLowerCase().includes("curva"));
+    const dmtFiles = orcFiles.filter((n) => n.toLowerCase().includes("dmt"));
+
+    const custosLines: string[] = [];
+    if (orcSintetico.length > 0) custosLines.push(`Orçamento Sintético: ${orcSintetico.join(", ")}.`);
+    if (composicoes.length > 0) custosLines.push(`Composições de custos: ${composicoes.join(", ")}.`);
+    if (memoriaCalc.length > 0) custosLines.push(`Memória de cálculo: ${memoriaCalc.join(", ")}.`);
+    if (cotacoes.length > 0) custosLines.push(`Cotações: ${cotacoes.join(", ")}.`);
+    if (curvaAbc.length > 0) custosLines.push(`Curva ABC: ${curvaAbc.join(", ")}.`);
+    if (dmtFiles.length > 0) custosLines.push(`DMT: ${dmtFiles.join(", ")}.`);
+
+    const custosTexto = custosLines.length > 0
+      ? `Foram identificados os seguintes documentos de composição de custos:\n${custosLines.join("\n")}`
+      : "Não foram identificados documentos de composição de custos.";
+
+    // ── 5.4 ONERAÇÃO / DESONERAÇÃO ──
+    const allNames = arquivos.map((a) => a.nome_original.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+    const hasDesonerado = allNames.some((n) => n.includes("desonerado") || n.includes("desoneracao") || n.includes("sem desoneracao"));
+    const hasOnerado = allNames.some((n) => n.includes("onerado") && !n.includes("desonerado"));
+    let oneracaoTexto = "Não foram identificados documentos relativos à oneração ou desoneração.";
+    if (hasDesonerado && hasOnerado) {
+      oneracaoTexto = "Foram identificados documentos com referência a regime desonerado e onerado.";
+    } else if (hasDesonerado) {
+      oneracaoTexto = "Foram identificados documentos com referência a regime desonerado.";
+    } else if (hasOnerado) {
+      oneracaoTexto = "Foram identificados documentos com referência a regime onerado.";
+    }
+
+    // ── 5.5 BDI ──
+    const bdiFiles = orcFiles.filter((n) => n.toLowerCase().includes("bdi"));
+    const bdiTexto = bdiFiles.length > 0
+      ? `Foi identificada a presença de BDI nos seguintes documentos: ${bdiFiles.join(", ")}.`
+      : "Não foi identificado documento de BDI no conjunto documental apresentado.";
+
+    // ── 5.6 CRONOGRAMA E MEMORIAIS ──
+    const cronoFiles = listFileNames("CRONOGRAMA");
+    const cronoLines: string[] = [];
+    if (cronoFiles.length > 0) cronoLines.push(`Cronograma: ${cronoFiles.join(", ")}.`);
+    if (memoriais.length > 0) cronoLines.push(`Memoriais: ${memoriais.join(", ")}.`);
+    const cronoTexto = cronoLines.length > 0
+      ? `Foram identificados os seguintes documentos:\n${cronoLines.join("\n")}`
+      : "Não foram identificados cronograma ou memoriais no conjunto documental.";
+
+    // ── CONCLUSÃO ──
+    const totalDocs = arquivos.length;
+    const categoriasPresentes = [...new Set(arquivos.map((a) => a.categoria).filter(Boolean))];
+    const hasFundamentacao = projetosLines.length > 0 || custosLines.length > 0 || cronoFiles.length > 0;
+
+    let conclusaoTexto: string;
+    if (hasFundamentacao) {
+      conclusaoTexto = `Parecer técnico elaborado com base na análise de ${totalDocs} documento(s) integrante(s) do processo administrativo nº ${processo.numero_processo}.\n\n` +
+        `Foram identificadas ${categoriasPresentes.length} categoria(s) documental(is) no conjunto analisado. ` +
+        `A documentação técnica apresentada foi avaliada quanto à completude e consistência para fins de instrução do procedimento licitatório.`;
+    } else {
+      conclusaoTexto = `Parecer técnico elaborado com base na análise de ${totalDocs} documento(s) integrante(s) do processo administrativo nº ${processo.numero_processo}.\n\n` +
+        `A capacidade de leitura automatizada dos documentos foi limitada. Recomenda-se revisão manual dos blocos da fundamentação técnica antes da emissão final do parecer.`;
+    }
+
     const built: SecaoParecer[] = [
       {
         key: "objeto",
@@ -143,7 +237,7 @@ const ValidacaoParecer = () => {
       {
         key: "projetos_documentos",
         titulo: "5.1 PROJETOS E DEMAIS DOCUMENTOS TÉCNICOS",
-        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        texto: projetosTexto,
         oculto: false,
       },
       {
@@ -157,28 +251,27 @@ const ValidacaoParecer = () => {
       {
         key: "determinacao_custos",
         titulo: "5.3 DETERMINAÇÃO DOS CUSTOS",
-        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        texto: custosTexto,
         oculto: false,
       },
       {
         key: "oneracao_desoneracao",
         titulo: "5.4 ONERAÇÃO / DESONERAÇÃO",
-        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        texto: oneracaoTexto,
         oculto: false,
       },
       {
         key: "bdi",
         titulo: "5.5 BDI",
-        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        texto: bdiTexto,
         oculto: false,
       },
       {
         key: "cronograma",
         titulo: "5.6 CRONOGRAMA FÍSICO-FINANCEIRO E MEMORIAIS",
-        texto: "Não foi identificada informação correspondente nos documentos analisados.",
+        texto: cronoTexto,
         oculto: false,
       },
-      // Other extracted fields as additional analysis sections
       ...dadosExtraidos
         .filter((d) => !["objeto_contratacao", "valor_estimado", "responsavel_tecnico", "numero_processo", "orgao_responsavel", "secretaria_responsavel"].includes(d.campo))
         .map((d, i) => ({
@@ -192,7 +285,7 @@ const ValidacaoParecer = () => {
       {
         key: "conclusao",
         titulo: "6. CONCLUSÃO – PARECER TÉCNICO",
-        texto: `Parecer técnico elaborado com base na análise de ${arquivos.length} documento(s) integrante(s) do processo administrativo nº ${processo.numero_processo}.`,
+        texto: conclusaoTexto,
         oculto: false,
       },
       {
