@@ -280,11 +280,11 @@ const PreviaParecer = () => {
         assinatura,
       };
 
-      const { error } = await supabase.from("pareceres").insert({
+      const { error } = await supabase.from("pareceres").insert([{
         processo_id: id!,
         versao: nextVersion,
-        conteudo_json: conteudo,
-      });
+        conteudo_json: conteudo as any,
+      }]);
       if (error) throw error;
 
       await supabase.from("processos").update({ status: "concluido" as const }).eq("id", id!);
