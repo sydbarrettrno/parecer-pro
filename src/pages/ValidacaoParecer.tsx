@@ -94,6 +94,8 @@ const ValidacaoParecer = () => {
     secretaria_responsavel: "Secretaria Responsável",
     valor_estimado: "Valor Estimado",
     responsavel_tecnico: "Responsável Técnico",
+    analise_completude: "Análise de Completude Documental",
+    regime_tributario: "Regime Tributário",
   };
 
   // Build sections from extracted data once loaded
@@ -272,8 +274,16 @@ const ValidacaoParecer = () => {
         texto: cronoTexto,
         oculto: false,
       },
+      {
+        key: "regime_tributario",
+        titulo: "5.7 REGIME TRIBUTÁRIO",
+        texto: dadosMap["regime_tributario"]?.valor || oneracaoTexto,
+        origem: dadosMap["regime_tributario"]?.origem,
+        confianca: dadosMap["regime_tributario"]?.confianca,
+        oculto: false,
+      },
       ...dadosExtraidos
-        .filter((d) => !["objeto_contratacao", "valor_estimado", "responsavel_tecnico", "numero_processo", "orgao_responsavel", "secretaria_responsavel"].includes(d.campo))
+        .filter((d) => !["objeto_contratacao", "valor_estimado", "responsavel_tecnico", "numero_processo", "orgao_responsavel", "secretaria_responsavel", "analise_completude", "regime_tributario"].includes(d.campo))
         .map((d, i) => ({
           key: `extra_${d.id}`,
           titulo: `5.${7 + i} ${campoLabels[d.campo] || d.campo.toUpperCase()}`,
@@ -286,6 +296,14 @@ const ValidacaoParecer = () => {
         key: "conclusao",
         titulo: "6. CONCLUSÃO – PARECER TÉCNICO",
         texto: conclusaoTexto,
+        oculto: false,
+      },
+      {
+        key: "completude",
+        titulo: "ANÁLISE DE COMPLETUDE DOCUMENTAL",
+        texto: dadosMap["analise_completude"]?.valor || "Análise de completude não disponível. Verifique manualmente se todos os documentos essenciais estão presentes.",
+        origem: dadosMap["analise_completude"]?.origem,
+        confianca: dadosMap["analise_completude"]?.confianca,
         oculto: false,
       },
       {
