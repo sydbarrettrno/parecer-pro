@@ -211,6 +211,13 @@ const Dashboard = () => {
                               Ver Resultado Final
                             </Link>
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => reanalyze.mutate(processo.id)}
+                            disabled={reanalyze.isPending}
+                          >
+                            <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                            Refazer Análise
+                          </DropdownMenuItem>
                           {processo.status === "concluido" && (
                             <DropdownMenuItem asChild>
                               <Link to={`/validacao/${processo.id}`} className="flex items-center gap-2">
@@ -225,6 +232,7 @@ const Dashboard = () => {
                           >
                             <Trash2 className="mr-2 h-3.5 w-3.5" />
                             Excluir Processo
+                          </DropdownMenuItem>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
