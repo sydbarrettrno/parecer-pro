@@ -143,6 +143,7 @@ const RevisaoParecer = () => {
   };
 
   const isAnalyzing = processo?.status === "analisando";
+  const isError = processo?.status === "erro";
 
   if (loadingProcesso) {
     return (
