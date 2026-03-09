@@ -1,21 +1,26 @@
 import { useState } from "react";
-import { categoriaLabel } from "@/services/documentClassifier";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   FileText, Eye, EyeOff, Pencil, Check, X, Loader2, RefreshCw, ArrowRight,
 } from "lucide-react";
-import { fetchProcesso, updateProcessoStatus } from "@/database/processos";
-import { fetchArquivos } from "@/database/arquivos";
-import { fetchDadosExtraidos, updateDadoExtraido } from "@/database/dados-extraidos";
-import { campoLabels } from "@/services/objectExtractor";
+
+const campoLabels: Record<string, string> = {
+  objeto_contratacao: "Objeto da Contratação",
+  numero_processo: "Número do Processo",
+  orgao_responsavel: "Órgão Responsável",
+  secretaria_responsavel: "Secretaria Responsável",
+  valor_estimado: "Valor Estimado",
+  responsavel_tecnico: "Responsável Técnico",
+};
 
 const confiancaColor: Record<string, string> = {
   alta: "bg-success text-success-foreground",
@@ -32,23 +37,49 @@ const RevisaoParecer = () => {
 
   const { data: processo } = useQuery({
     queryKey: ["processo", id],
-    queryFn: () => fetchProcesso(id!),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("processos")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: arquivos } = useQuery({
     queryKey: ["arquivos", id],
-    queryFn: () => fetchArquivos(id!),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("arquivos")
+        .select("*")
+        .eq("processo_id", id!);
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: dadosExtraidos, isLoading: loadingDados } = useQuery({
     queryKey: ["dados_extraidos", id],
-    queryFn: () => fetchDadosExtraidos(id!),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dados_extraidos")
+        .select("*")
+        .eq("processo_id", id!);
+      if (error) throw error;
+      return data;
+    },
     refetchInterval: processo?.status === "analisando" ? 3000 : false,
   });
 
   const updateDado = useMutation({
     mutationFn: async ({ dadoId, updates }: { dadoId: string; updates: Record<string, unknown> }) => {
-      await updateDadoExtraido(dadoId, updates);
+      const { error } = await supabase
+        .from("dados_extraidos")
+        .update(updates)
+        .eq("id", dadoId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dados_extraidos", id] });
@@ -57,7 +88,7 @@ const RevisaoParecer = () => {
 
   const reanalyze = useMutation({
     mutationFn: async () => {
-      await updateProcessoStatus(id!, "analisando");
+      await supabase.from("processos").update({ status: "analisando" as const }).eq("id", id!);
       const { error } = await supabase.functions.invoke("analyze-documents", {
         body: { processo_id: id },
       });
@@ -127,7 +158,7 @@ const RevisaoParecer = () => {
                   <span className="truncate">{arq.nome_original}</span>
                   {arq.categoria && (
                     <Badge variant="outline" className="ml-auto shrink-0 text-xs">
-                      {categoriaLabel(arq.categoria)}
+                      {arq.categoria}
                     </Badge>
                   )}
                 </div>
@@ -221,12 +252,6 @@ const RevisaoParecer = () => {
                         <p className="mt-1 text-xs text-muted-foreground">
                           Origem: {dado.origem_documento}
                         </p>
-                      )}
-                      {dado.trecho && (
-                        <div className="mt-2 rounded border border-border/50 bg-muted/30 px-3 py-2">
-                          <p className="text-[11px] font-medium text-muted-foreground mb-0.5">Trecho identificado:</p>
-                          <p className="text-xs italic text-foreground/80">"{dado.trecho}"</p>
-                        </div>
                       )}
                     </div>
                     <div className="flex gap-1">

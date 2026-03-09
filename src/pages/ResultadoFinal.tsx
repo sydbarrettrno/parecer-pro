@@ -1,29 +1,14 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Download, FileText, Loader2, Plus, Trash2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Download, FileText, Loader2, Plus, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { generateParecerDocx } from "@/services/docxGenerator";
-import { buildParecerFromRawData } from "@/services/parecerBuilder";
-import { fetchProcesso, updateProcessoStatus } from "@/database/processos";
-import { fetchArquivos } from "@/database/arquivos";
-import { fetchDadosExtraidos } from "@/database/dados-extraidos";
-import { fetchPareceres, insertParecer, deleteParecer } from "@/database/pareceres";
+import { generateParecerDocx } from "@/lib/generate-docx";
 
 const ResultadoFinal = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,22 +16,53 @@ const ResultadoFinal = () => {
 
   const { data: processo } = useQuery({
     queryKey: ["processo", id],
-    queryFn: () => fetchProcesso(id!),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("processos")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: dadosExtraidos } = useQuery({
     queryKey: ["dados_extraidos", id],
-    queryFn: () => fetchDadosExtraidos(id!, true),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dados_extraidos")
+        .select("*")
+        .eq("processo_id", id!)
+        .eq("oculto", false);
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: arquivos } = useQuery({
     queryKey: ["arquivos", id],
-    queryFn: () => fetchArquivos(id!),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("arquivos")
+        .select("*")
+        .eq("processo_id", id!);
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: pareceres, isLoading: loadingPareceres } = useQuery({
     queryKey: ["pareceres", id],
-    queryFn: () => fetchPareceres(id!),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pareceres")
+        .select("*")
+        .eq("processo_id", id!)
+        .order("versao", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
   });
 
   const gerarParecer = useMutation({
@@ -54,21 +70,49 @@ const ResultadoFinal = () => {
       if (!processo || !dadosExtraidos || !arquivos) throw new Error("Dados não carregados");
 
       const nextVersion = (pareceres?.[0]?.versao ?? 0) + 1;
+      const dadosMap: Record<string, string> = {};
+      dadosExtraidos.forEach((d) => {
+        dadosMap[d.campo] = d.valor;
+      });
 
-      const conteudo = buildParecerFromRawData(
-        processo,
-        dadosExtraidos,
-        arquivos,
-        nextVersion
-      );
+      const conteudo = {
+        identificacao_parecer: {
+          numero: `PT-${processo.numero_processo}-V${String(nextVersion).padStart(2, "0")}`,
+          data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }),
+        },
+        identificacao_processo: {
+          nome: processo.nome_processo,
+          numero: processo.numero_processo,
+          orgao: processo.orgao,
+          secretaria: processo.secretaria,
+        },
+        objeto: dadosMap["objeto_contratacao"] || "Não foi identificada informação correspondente nos documentos analisados.",
+        documentos_analisados: arquivos.map((a) => ({
+          nome: a.nome_original,
+          categoria: a.categoria || "OUTROS",
+        })),
+        analise_tecnica: dadosExtraidos.map((d) => ({
+          campo: d.campo,
+          valor: d.valor,
+          origem: d.origem_documento,
+          confianca: d.confianca,
+        })),
+        inconsistencias: "Não foram identificadas inconsistências graves nos documentos analisados.",
+        complementacao: null,
+        sintese: `Parecer técnico elaborado com base na análise de ${arquivos.length} documento(s) integrante(s) do processo administrativo nº ${processo.numero_processo}.`,
+        responsavel_tecnico: dadosMap["responsavel_tecnico"] || "Não foi identificada informação correspondente nos documentos analisados.",
+      };
 
-      await insertParecer({
+      // Save to DB
+      const { error } = await supabase.from("pareceres").insert({
         processo_id: id!,
         versao: nextVersion,
         conteudo_json: conteudo,
       });
+      if (error) throw error;
 
-      await updateProcessoStatus(id!, "concluido");
+      // Update process status
+      await supabase.from("processos").update({ status: "concluido" as const }).eq("id", id!);
 
       return { conteudo, version: nextVersion };
     },
@@ -79,19 +123,6 @@ const ResultadoFinal = () => {
     },
     onError: (err) => {
       toast.error(`Erro ao gerar parecer: ${err.message}`);
-    },
-  });
-
-  const excluirParecer = useMutation({
-    mutationFn: async (parecerId: string) => {
-      await deleteParecer(parecerId);
-    },
-    onSuccess: () => {
-      toast.success("Parecer excluído com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["pareceres", id] });
-    },
-    onError: (err) => {
-      toast.error(`Erro ao excluir parecer: ${err.message}`);
     },
   });
 
@@ -169,36 +200,10 @@ const ResultadoFinal = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={() => handleDownload(parecer)}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Baixar DOCX
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="icon" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir parecer V{String(parecer.versao).padStart(2, "0")}?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. O parecer será removido permanentemente.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => excluirParecer.mutate(parecer.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                <Button variant="outline" onClick={() => handleDownload(parecer)}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Baixar DOCX
+                </Button>
               </CardContent>
             </Card>
           ))}

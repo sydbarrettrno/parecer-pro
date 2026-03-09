@@ -4,10 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
-import NovoParecer from "./pages/NovoParecer";
+import NovoProcesso from "./pages/NovoProcesso";
 import RevisaoParecer from "./pages/RevisaoParecer";
-import Validacao from "./pages/Validacao";
-import Resultado from "./pages/Resultado";
+import ValidacaoParecer from "./pages/ValidacaoParecer";
+import ResultadoFinal from "./pages/ResultadoFinal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,10 +20,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/novo" element={<NovoParecer />} />
+          <Route path="/novo" element={<NovoProcesso />} />
           <Route path="/revisao/:id" element={<RevisaoParecer />} />
-          <Route path="/validacao/:id" element={<Validacao />} />
-          <Route path="/resultado/:id" element={<Resultado />} />
+          <Route path="/validacao/:id" element={<ValidacaoParecer />} />
+          <Route path="/resultado/:id" element={<ResultadoFinal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

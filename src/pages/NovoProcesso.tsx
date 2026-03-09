@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Upload, Loader2, FileArchive } from "lucide-react";
-import { listZipContents, isValidZip } from "@/services/zipExtractor";
-import { executePipelineUpload } from "@/services/pipeline";
+import JSZip from "jszip";
 
-const NovoParecer = () => {
+const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".xlsx", ".odt"];
+
+const NovoProcesso = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     nome_processo: "",
@@ -25,13 +27,16 @@ const NovoParecer = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!isValidZip(file)) {
+    if (!file.name.endsWith(".zip")) {
       toast.error("Apenas arquivos .zip são aceitos");
       return;
     }
     setZipFile(file);
     try {
-      const names = await listZipContents(file);
+      const zip = await JSZip.loadAsync(file);
+      const names = Object.keys(zip.files).filter(
+        (n) => !zip.files[n].dir && ACCEPTED_EXTENSIONS.some((ext) => n.toLowerCase().endsWith(ext))
+      );
       setFileList(names);
     } catch {
       toast.error("Erro ao ler arquivo ZIP");
@@ -41,11 +46,64 @@ const NovoParecer = () => {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!zipFile) throw new Error("Envie um arquivo ZIP");
-      return executePipelineUpload(form, zipFile);
+
+      // 1. Create process
+      const { data: processo, error: procError } = await supabase
+        .from("processos")
+        .insert({
+          nome_processo: form.nome_processo,
+          numero_processo: form.numero_processo,
+          orgao: form.orgao,
+          secretaria: form.secretaria,
+          status: "analisando" as const,
+        })
+        .select()
+        .single();
+      if (procError) throw procError;
+
+      // 2. Upload ZIP to storage
+      const zipPath = `${processo.id}/processo.zip`;
+      const { error: uploadError } = await supabase.storage
+        .from("processos")
+        .upload(zipPath, zipFile);
+      if (uploadError) throw uploadError;
+
+      // 3. Extract and upload individual files, register in arquivos table
+      const zip = await JSZip.loadAsync(zipFile);
+      const validFiles = Object.keys(zip.files).filter(
+        (n) => !zip.files[n].dir && ACCEPTED_EXTENSIONS.some((ext) => n.toLowerCase().endsWith(ext))
+      );
+
+      for (const fileName of validFiles) {
+        const fileData = await zip.files[fileName].async("blob");
+        const ext = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+        const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const storagePath = `${processo.id}/${safeName}`;
+
+        await supabase.storage.from("processos").upload(storagePath, fileData);
+
+        await supabase.from("arquivos").insert({
+          processo_id: processo.id,
+          nome_original: fileName,
+          extensao: ext,
+          storage_path: storagePath,
+        });
+      }
+
+      // 4. Call analysis edge function
+      const { error: fnError } = await supabase.functions.invoke("analyze-documents", {
+        body: { processo_id: processo.id },
+      });
+      if (fnError) {
+        console.error("Analysis function error:", fnError);
+        // Don't block - user can still review
+      }
+
+      return processo;
     },
-    onSuccess: (result) => {
+    onSuccess: (processo) => {
       toast.success("Processo criado! Análise em andamento...");
-      navigate(`/revisao/${result.processoId}`);
+      navigate(`/revisao/${processo.id}`);
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
@@ -143,19 +201,12 @@ const NovoParecer = () => {
               <div className="rounded-lg border bg-muted/30 p-4">
                 <h4 className="mb-2 text-sm font-medium">Documentos no ZIP:</h4>
                 <ul className="space-y-1">
-                  {fileList.map((f) => {
-                    const fileName = f.split("/").pop() || f;
-                    const folder = f.includes("/") ? f.substring(0, f.lastIndexOf("/")) : "";
-                    return (
-                      <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <FileArchive className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">
-                          {folder && <span className="text-muted-foreground/60">{folder}/</span>}
-                          {fileName}
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {fileList.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileArchive className="h-3.5 w-3.5" />
+                      {f}
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -182,4 +233,4 @@ const NovoParecer = () => {
   );
 };
 
-export default NovoParecer;
+export default NovoProcesso;
