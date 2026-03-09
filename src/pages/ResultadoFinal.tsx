@@ -225,10 +225,20 @@ const ResultadoFinal = () => {
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => handleDownload(parecer)}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar DOCX
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => handleDownload(parecer)}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar DOCX
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={() => setDeleteVersionId(parecer.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
