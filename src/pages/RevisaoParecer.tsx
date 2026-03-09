@@ -35,18 +35,26 @@ const RevisaoParecer = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const { data: processo } = useQuery({
+  const { data: processo, isLoading: loadingProcesso, isError: errorProcesso } = useQuery({
     queryKey: ["processo", id],
+    enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("processos")
         .select("*")
         .eq("id", id!)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
   });
+
+  useEffect(() => {
+    if (!id || (!loadingProcesso && !processo && !errorProcesso)) {
+      toast.error("Processo não encontrado");
+      navigate("/");
+    }
+  }, [id, loadingProcesso, processo, errorProcesso, navigate]);
 
   const { data: arquivos } = useQuery({
     queryKey: ["arquivos", id],
