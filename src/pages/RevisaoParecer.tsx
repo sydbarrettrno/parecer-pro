@@ -108,7 +108,30 @@ const RevisaoParecer = () => {
       queryClient.invalidateQueries({ queryKey: ["processo", id] });
       queryClient.invalidateQueries({ queryKey: ["dados_extraidos", id] });
     },
+    onError: () => {
+      toast.error("Erro na análise dos documentos");
+      queryClient.invalidateQueries({ queryKey: ["processo", id] });
+    },
   });
+
+  const stopAnalysis = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("processos")
+        .update({ status: "erro" as const })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.info("Análise interrompida");
+      queryClient.invalidateQueries({ queryKey: ["processo", id] });
+    },
+  });
+
+  // Detect stuck analysis (> 2 minutes)
+  const isStuck = processo?.status === "analisando" &&
+    processo?.updated_at &&
+    (Date.now() - new Date(processo.updated_at).getTime()) > 2 * 60 * 1000;
 
   const handleSaveEdit = (dadoId: string) => {
     updateDado.mutate({ dadoId, updates: { valor: editValue, editado: true } });
