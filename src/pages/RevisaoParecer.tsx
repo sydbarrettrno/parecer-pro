@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   FileText, Eye, EyeOff, Pencil, Check, X, Loader2, RefreshCw, ArrowRight,
+  StopCircle, AlertTriangle,
 } from "lucide-react";
 
 const campoLabels: Record<string, string> = {
