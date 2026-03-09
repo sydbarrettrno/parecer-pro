@@ -24,6 +24,7 @@ export type Database = {
           nome_original: string
           processo_id: string
           storage_path: string | null
+          texto_extraido: string | null
         }
         Insert: {
           categoria?: Database["public"]["Enums"]["categoria_documento"] | null
@@ -34,6 +35,7 @@ export type Database = {
           nome_original: string
           processo_id: string
           storage_path?: string | null
+          texto_extraido?: string | null
         }
         Update: {
           categoria?: Database["public"]["Enums"]["categoria_documento"] | null
@@ -44,6 +46,7 @@ export type Database = {
           nome_original?: string
           processo_id?: string
           storage_path?: string | null
+          texto_extraido?: string | null
         }
         Relationships: [
           {
