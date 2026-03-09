@@ -66,6 +66,23 @@ const Dashboard = () => {
     onError: () => toast.error("Erro ao atualizar título"),
   });
 
+  const deleteProcesso = useMutation({
+    mutationFn: async (id: string) => {
+      // Delete related records first (cascading)
+      await supabase.from("pareceres").delete().eq("processo_id", id);
+      await supabase.from("dados_extraidos").delete().eq("processo_id", id);
+      await supabase.from("arquivos").delete().eq("processo_id", id);
+      const { error } = await supabase.from("processos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Processo excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["processos"] });
+      setDeleteId(null);
+    },
+    onError: () => toast.error("Erro ao excluir processo"),
+  });
+
   const startEditTitle = (id: string, currentTitle: string) => {
     setEditingId(id);
     setEditTitle(currentTitle);
