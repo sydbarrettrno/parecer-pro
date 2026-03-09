@@ -274,6 +274,14 @@ const ValidacaoParecer = () => {
         texto: cronoTexto,
         oculto: false,
       },
+      {
+        key: "regime_tributario",
+        titulo: "5.7 REGIME TRIBUTÁRIO",
+        texto: dadosMap["regime_tributario"]?.valor || oneracaoTexto,
+        origem: dadosMap["regime_tributario"]?.origem,
+        confianca: dadosMap["regime_tributario"]?.confianca,
+        oculto: false,
+      },
       ...dadosExtraidos
         .filter((d) => !["objeto_contratacao", "valor_estimado", "responsavel_tecnico", "numero_processo", "orgao_responsavel", "secretaria_responsavel", "analise_completude", "regime_tributario"].includes(d.campo))
         .map((d, i) => ({
