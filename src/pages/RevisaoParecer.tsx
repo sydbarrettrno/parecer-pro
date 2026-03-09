@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,18 +35,26 @@ const RevisaoParecer = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const { data: processo } = useQuery({
+  const { data: processo, isLoading: loadingProcesso, isError: errorProcesso } = useQuery({
     queryKey: ["processo", id],
+    enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("processos")
         .select("*")
         .eq("id", id!)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
   });
+
+  useEffect(() => {
+    if (!id || (!loadingProcesso && !processo && !errorProcesso)) {
+      toast.error("Processo não encontrado");
+      navigate("/");
+    }
+  }, [id, loadingProcesso, processo, errorProcesso, navigate]);
 
   const { data: arquivos } = useQuery({
     queryKey: ["arquivos", id],
@@ -111,6 +119,19 @@ const RevisaoParecer = () => {
   };
 
   const isAnalyzing = processo?.status === "analisando";
+
+  if (loadingProcesso) {
+    return (
+      <AppLayout title="Revisão do Parecer Técnico">
+        <div className="flex flex-col items-center py-12">
+          <Loader2 className="mb-3 h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Carregando processo...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!processo) return null;
 
   return (
     <AppLayout title="Revisão do Parecer Técnico">
