@@ -120,6 +120,19 @@ const RevisaoParecer = () => {
 
   const isAnalyzing = processo?.status === "analisando";
 
+  if (loadingProcesso) {
+    return (
+      <AppLayout title="Revisão do Parecer Técnico">
+        <div className="flex flex-col items-center py-12">
+          <Loader2 className="mb-3 h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Carregando processo...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!processo) return null;
+
   return (
     <AppLayout title="Revisão do Parecer Técnico">
       {processo && (
