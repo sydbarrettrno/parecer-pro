@@ -243,10 +243,33 @@ const RevisaoParecer = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {isAnalyzing && (!dadosExtraidos || dadosExtraidos.length === 0) ? (
+          {isError ? (
+            <div className="flex flex-col items-center py-12">
+              <AlertTriangle className="mb-3 h-8 w-8 text-destructive" />
+              <p className="text-sm font-medium text-destructive">Erro na análise dos documentos</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                A análise foi interrompida ou falhou. Tente reanalisar os documentos.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => reanalyze.mutate()}
+                disabled={reanalyze.isPending}
+              >
+                <RefreshCw className={`mr-1 h-3.5 w-3.5 ${reanalyze.isPending ? "animate-spin" : ""}`} />
+                Tentar novamente
+              </Button>
+            </div>
+          ) : isAnalyzing && (!dadosExtraidos || dadosExtraidos.length === 0) ? (
             <div className="flex flex-col items-center py-12">
               <Loader2 className="mb-3 h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Analisando documentos...</p>
+              {isStuck && (
+                <p className="mt-2 text-xs text-warning-foreground bg-warning/20 px-3 py-1 rounded">
+                  A análise está demorando mais que o esperado. Você pode interrompê-la.
+                </p>
+              )}
             </div>
           ) : dadosExtraidos && dadosExtraidos.length > 0 ? (
             <div className="space-y-3">
