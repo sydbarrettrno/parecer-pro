@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   FileText, Eye, EyeOff, Pencil, Check, X, Loader2, RefreshCw, ArrowRight,
+  StopCircle, AlertTriangle,
 } from "lucide-react";
 
 const campoLabels: Record<string, string> = {
@@ -107,7 +108,30 @@ const RevisaoParecer = () => {
       queryClient.invalidateQueries({ queryKey: ["processo", id] });
       queryClient.invalidateQueries({ queryKey: ["dados_extraidos", id] });
     },
+    onError: () => {
+      toast.error("Erro na análise dos documentos");
+      queryClient.invalidateQueries({ queryKey: ["processo", id] });
+    },
   });
+
+  const stopAnalysis = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("processos")
+        .update({ status: "erro" as const })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.info("Análise interrompida");
+      queryClient.invalidateQueries({ queryKey: ["processo", id] });
+    },
+  });
+
+  // Detect stuck analysis (> 2 minutes)
+  const isStuck = processo?.status === "analisando" &&
+    processo?.updated_at &&
+    (Date.now() - new Date(processo.updated_at).getTime()) > 2 * 60 * 1000;
 
   const handleSaveEdit = (dadoId: string) => {
     updateDado.mutate({ dadoId, updates: { valor: editValue, editado: true } });
@@ -119,6 +143,7 @@ const RevisaoParecer = () => {
   };
 
   const isAnalyzing = processo?.status === "analisando";
+  const isError = processo?.status === "erro";
 
   if (loadingProcesso) {
     return (
@@ -194,6 +219,17 @@ const RevisaoParecer = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Análise Técnica — Dados Extraídos</CardTitle>
             <div className="flex gap-2">
+              {isAnalyzing && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => stopAnalysis.mutate()}
+                  disabled={stopAnalysis.isPending}
+                >
+                  <StopCircle className="mr-1 h-3.5 w-3.5" />
+                  Interromper
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -207,10 +243,33 @@ const RevisaoParecer = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {isAnalyzing && (!dadosExtraidos || dadosExtraidos.length === 0) ? (
+          {isError ? (
+            <div className="flex flex-col items-center py-12">
+              <AlertTriangle className="mb-3 h-8 w-8 text-destructive" />
+              <p className="text-sm font-medium text-destructive">Erro na análise dos documentos</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                A análise foi interrompida ou falhou. Tente reanalisar os documentos.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => reanalyze.mutate()}
+                disabled={reanalyze.isPending}
+              >
+                <RefreshCw className={`mr-1 h-3.5 w-3.5 ${reanalyze.isPending ? "animate-spin" : ""}`} />
+                Tentar novamente
+              </Button>
+            </div>
+          ) : isAnalyzing && (!dadosExtraidos || dadosExtraidos.length === 0) ? (
             <div className="flex flex-col items-center py-12">
               <Loader2 className="mb-3 h-8 w-8 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Analisando documentos...</p>
+              {isStuck && (
+                <p className="mt-2 text-xs text-warning-foreground bg-warning/20 px-3 py-1 rounded">
+                  A análise está demorando mais que o esperado. Você pode interrompê-la.
+                </p>
+              )}
             </div>
           ) : dadosExtraidos && dadosExtraidos.length > 0 ? (
             <div className="space-y-3">
