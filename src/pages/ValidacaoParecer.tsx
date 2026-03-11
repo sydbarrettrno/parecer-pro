@@ -155,9 +155,17 @@ const ValidacaoParecer = () => {
     if (cotacoes.length > 0) custosLines.push(`Cotações: ${cotacoes.join(", ")}.`);
     if (curvaAbc.length > 0) custosLines.push(`Curva ABC: ${curvaAbc.join(", ")}.`);
     if (dmtFiles.length > 0) custosLines.push(`DMT: ${dmtFiles.join(", ")}.`);
-    const custosTexto = custosLines.length > 0
-      ? `Foram identificados os seguintes documentos de composição de custos:\n${custosLines.join("\n")}`
-      : "Não foram identificados documentos de composição de custos.";
+    // Also check cotações/propostas for 5.3
+    const cotacoesOrc = listFileNames("COTACAO_OU_PROPOSTA");
+    if (cotacoesOrc.length > 0) custosLines.push(`Cotações / Propostas: ${cotacoesOrc.join(", ")}.`);
+    let custosTexto: string;
+    if (custosLines.length > 0) {
+      custosTexto = `Foram identificados os seguintes documentos relacionados à composição de custos:\n${custosLines.join("\n")}`;
+    } else if (orcFilesProjetos.length > 0 || cotacoesFiles.length > 0) {
+      custosTexto = "Foram identificados documentos orçamentários no conjunto documental, porém não foi possível detalhar a composição de custos com base apenas na classificação dos arquivos. Recomenda-se verificação manual.";
+    } else {
+      custosTexto = "Não foram identificados documentos específicos de composição de custos no conjunto documental apresentado.";
+    }
 
     // 5.4 Oneração
     const allNames = arquivos.map((a) => normalize(a.nome_original));
