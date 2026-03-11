@@ -81,14 +81,17 @@ const ValidacaoParecer = () => {
 
     // Group documents by category for display
     const categoryLabels: Record<string, string> = {
+      TERMO_DE_REFERENCIA: "TR – Termo de Referência",
       MEMORIAL_OU_TR: "MD – Memorial Descritivo",
       CADASTRO_TOPOGRAFIA: "CAT – Cadastro / Topografia",
       DRENAGEM: "DRE – Drenagem",
       URBANIZACAO_SINALIZACAO: "URB – Urbanização / Sinalização",
       ORCAMENTO: "ORC – Orçamento",
+      COTACAO_OU_PROPOSTA: "COT – Cotações / Propostas",
       CRONOGRAMA: "CRO – Cronograma",
       RESPONSABILIDADE_TECNICA: "ART/RRT – Responsabilidade Técnica",
       ADMINISTRATIVO: "ADM – Administrativo",
+      MODELO: "MOD – Modelo / Template",
       OUTROS: "Complementares",
     };
 
@@ -172,8 +175,15 @@ const ValidacaoParecer = () => {
       ? `Foram identificados os seguintes documentos:\n${cronoLines.join("\n")}`
       : "Não foram identificados cronograma ou memoriais no conjunto documental.";
 
-    // Conclusão institucional
-    const conclusaoTexto = `Diante do exposto, com base na análise da documentação técnica apresentada para instruir o processo administrativo nº ${processo.numero_processo}, este parecer técnico conclui que o conjunto documental foi avaliado quanto à sua completude e consistência, à luz da Lei nº 14.133/2021, estando apto a subsidiar a continuidade do procedimento licitatório.`;
+    // Conclusão institucional — neutra quando identificação é insuficiente
+    const categoriasEssenciais = ["ORCAMENTO", "MEMORIAL_OU_TR", "TERMO_DE_REFERENCIA"];
+    const categoriasPresentes = [...new Set(arquivos.map((a) => a.categoria).filter(Boolean))] as string[];
+    const essenciaisPresentes = categoriasEssenciais.filter((c) => categoriasPresentes.includes(c));
+    const identificacaoSuficiente = essenciaisPresentes.length >= 2;
+
+    const conclusaoTexto = identificacaoSuficiente
+      ? `Diante do exposto, com base na análise da documentação técnica apresentada para instruir o processo administrativo nº ${processo.numero_processo}, este parecer técnico conclui que o conjunto documental foi avaliado quanto à sua completude e consistência, à luz da Lei nº 14.133/2021.`
+      : `Diante do exposto, com base na análise da documentação técnica apresentada para instruir o processo administrativo nº ${processo.numero_processo}, este parecer técnico registra que a identificação documental realizada foi parcial, não sendo possível atestar a completude do conjunto documental. Recomenda-se complementação e revisão manual antes de subsidiar o procedimento licitatório.`;
 
     const built: SecaoParecer[] = [
       {

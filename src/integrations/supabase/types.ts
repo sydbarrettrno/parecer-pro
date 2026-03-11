@@ -200,6 +200,9 @@ export type Database = {
         | "DRENAGEM"
         | "CADASTRO_TOPOGRAFIA"
         | "URBANIZACAO_SINALIZACAO"
+        | "TERMO_DE_REFERENCIA"
+        | "COTACAO_OU_PROPOSTA"
+        | "MODELO"
       status_processo:
         | "cadastrado"
         | "analisando"
@@ -343,6 +346,9 @@ export const Constants = {
         "DRENAGEM",
         "CADASTRO_TOPOGRAFIA",
         "URBANIZACAO_SINALIZACAO",
+        "TERMO_DE_REFERENCIA",
+        "COTACAO_OU_PROPOSTA",
+        "MODELO",
       ],
       status_processo: [
         "cadastrado",

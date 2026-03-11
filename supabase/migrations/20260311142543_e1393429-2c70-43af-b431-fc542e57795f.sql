@@ -1,0 +1,3 @@
+ALTER TYPE public.categoria_documento ADD VALUE IF NOT EXISTS 'TERMO_DE_REFERENCIA';
+ALTER TYPE public.categoria_documento ADD VALUE IF NOT EXISTS 'COTACAO_OU_PROPOSTA';
+ALTER TYPE public.categoria_documento ADD VALUE IF NOT EXISTS 'MODELO';
