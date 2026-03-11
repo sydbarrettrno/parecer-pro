@@ -198,8 +198,8 @@ const ValidacaoParecer = () => {
     const identificacaoSuficiente = essenciaisPresentes.length >= 2;
 
     const conclusaoTexto = identificacaoSuficiente
-      ? `Diante do exposto, com base na análise da documentação técnica apresentada para instruir o processo administrativo nº ${processo.numero_processo}, este parecer técnico conclui que o conjunto documental foi avaliado quanto à sua completude e consistência, à luz da Lei nº 14.133/2021.`
-      : `Diante do exposto, com base na análise da documentação técnica apresentada para instruir o processo administrativo nº ${processo.numero_processo}, este parecer técnico registra que a identificação documental realizada foi parcial, não sendo possível atestar a completude do conjunto documental. Recomenda-se complementação e revisão manual antes de subsidiar o procedimento licitatório.`;
+      ? `Diante do exposto, com base na análise da documentação técnica apresentada para instruir o processo administrativo nº ${processo.numero_processo}, este parecer técnico registra que o conjunto documental foi avaliado quanto à sua completude e consistência, à luz da Lei nº 14.133/2021. As considerações e observações técnicas constam nas seções precedentes deste documento.`
+      : `Diante do exposto, com base na análise da documentação técnica apresentada para instruir o processo administrativo nº ${processo.numero_processo}, este parecer técnico registra que a identificação documental realizada foi parcial, limitando-se aos documentos efetivamente apresentados. As considerações e observações técnicas constam nas seções precedentes deste documento. Recomenda-se complementação e revisão manual.`;
 
     const built: SecaoParecer[] = [
       {
